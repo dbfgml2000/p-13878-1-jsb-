@@ -1,10 +1,11 @@
-package com.mysite.sbb;
+package com.mysite.sbb.question;
 
+import com.mysite.sbb.answer.Answer;
+import com.mysite.sbb.answer.AnswerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class QuestionRepositoryTest {
     @Autowired
     private QuestionRepository questionRepository;
@@ -65,7 +67,6 @@ class QuestionRepositoryTest {
 
     @Test
     @DisplayName("수정")
-    @Transactional
     void t6() {
         Question question = questionRepository.findById(1).get();
         assertThat(question).isNotNull();
@@ -80,7 +81,6 @@ class QuestionRepositoryTest {
 
     @Test
     @DisplayName("삭제")
-    @Transactional
     void t7() {
         assertThat(questionRepository.count()).isEqualTo(2);
 
@@ -93,7 +93,6 @@ class QuestionRepositoryTest {
 
     @Test
     @DisplayName("답변 생성")
-    @Transactional
     void t8() { // @OnetoMany 활용하지 않는 일반적인 방식
         Question question = this.questionRepository.findById(2).get();
 
@@ -102,43 +101,56 @@ class QuestionRepositoryTest {
         answer.setQuestion(question);
         answer.setCreateDate(LocalDateTime.now());
         this.answerRepository.save(answer);
+
+        assertThat(answer.getId()).isGreaterThan(0);
     }
 
     @Test
-    @DisplayName("답변 생성 v2")
-    @Transactional
-    @Rollback(value = false)
+    @DisplayName("답변 생성 v2 (OneToMany 사용)")
+    // @Rollback(value = false)
     void t9() { // @OneToMany 활용하는 방법
         Question question = this.questionRepository.findById(2).get();
 
-        question.addAnswer("네 자동으로 생성됩니다.");
+        int beforeCount = question.getAnswers().size();
 
-        assertThat(question.getAnswers()).hasSize(1);
+        Answer newAnswer = question.addAnswer("네 자동으로 생성됩니다.");
+
+        // 트랜잭션이 종료된 이후에 DB에 반영되기 때문에 현재는 0
+        assertThat(newAnswer.getId()).isEqualTo(0);
+
+        int afterCount = question.getAnswers().size();
+
+        assertThat(afterCount).isEqualTo(beforeCount+1);
     }
-/*
+
     @Test
-    @DisplayName("")
+    @DisplayName("답변 조회")
     void t10() {
-        Optional<Answer> answers = this.answerRepository.findById(1);
-        assertThat(answers.isPresent()).isTrue();
-        Answer answer = answers.get();
+        Answer answer = this.answerRepository.findById(1).get();
         assertThat(answer.getQuestion().getId()).isEqualTo(2);
     }
 
-/*
-    @Transactional
     @Test
-    @DisplayName("")
-    void t10() {
-        Optional<Question> questions = this.questionRepository.findById(2);
-        assertThat(questions.isPresent()).isTrue();
-        Question question = questions.get();
+    @DisplayName("답변 조회 v2 (OneToMany)")
+    void t11() {
+        Question question = questionRepository.findById(2).get();
 
         List<Answer> answers = question.getAnswers();
+        assertThat(answers).hasSize(1);
 
-        assertThat(answers.size()).isEqualTo(1);
-        assertThat( answers.get(0).getContent()).isEqualTo("네 자동으로 생성됩니다.");
+        Answer answer = answers.get(0);
+        assertThat(answer.getContent()).isEqualTo("네 자동으로 생성됩니다.");
     }
-     */
 
+    @Test
+    @DisplayName("findById with OneToMany)")
+    void t12() {
+        // @OneToMany(fetch= FetchType.EAGER) -> question 가져올 때 answers도 채워옴
+        // 디폴트는 LAZY 옵션 -> answers는 필요할 때 뒤늦게 채워서 사용
+        Question question = questionRepository.findById(2).get();
+
+        Answer answer1 = question.getAnswers().get(0);
+
+        assertThat(answer1.getId()).isEqualTo(1);
+    }
 }
