@@ -1,16 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>질문 목록</title>
-</head>
-<body>
-<h1>질문목록</h1>
-<ul>
-    <li th:each="question : ${questions}">
-        <span th:text="${question.id}"></span>
-        <span th:text="${question.subject}"></span>
-    </li>
-</ul>
-</body>
-</html>
+<table>
+    <thead>
+    <tr>
+        <th>제목</th>
+        <th>작성일시</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="question : ${questionList}">
+        <td th:text="${question.subject}"></td>
+        <td th:text="${question.createDate}"></td>
+    </tr>
+    </tbody>
+</table>
