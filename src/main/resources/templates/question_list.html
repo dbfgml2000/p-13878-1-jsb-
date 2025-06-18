@@ -7,8 +7,9 @@
 <body>
 <h1>질문목록</h1>
 <ul>
-    <li th:each="q : ${questions}">
-        [[${q.id}]] : [[${q.subject}]]
+    <li th:each="question : ${questions}">
+        <span th:text="${question.id}"></span>
+        <span th:text="${question.subject}"></span>
     </li>
 </ul>
 </body>
